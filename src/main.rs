@@ -1,23 +1,51 @@
+use std::path::PathBuf;
+
+use clap::{Parser};
+use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 
-use clap::Parser;
+fn main() -> anyhow::Result<()> {
+    let args = Args::parse();
 
-fn main() {
-    let args = Cli::parse();
+    match args.subcommand {
+        Subcommand::Blur(blur) => {
+            let img = ImageReader::open(blur.input)?.decode()?;
+            let blurred = img.blur(blur.sigma);
+            blurred.save("out.jpg")?;
+        }
+        Subcommand::Resize(resize) => {
+            let img = ImageReader::open(resize.input)?.decode()?;
+            let resized = img.resize(resize.w, resize.h, FilterType::Gaussian);
+            resized.save("out.jpg")?;
+        }
+    }
 
-    let path = args.path;
-    let out = args.out;
-
-    let img = ImageReader::open(path).expect("PROBLEM").decode();
-    let blurred = img.expect("PROBLEM 2").blur(5.5);
-    blurred.save(out).expect("PROBLEM 3");
+    Ok(())
 }
 
 #[derive(Parser)]
-struct Cli {
-    path: std::path::PathBuf,
+struct Args {
+    #[command(subcommand)]
+    subcommand: Subcommand,
+}
 
-    out: std::path::PathBuf,
+#[derive(clap::Subcommand)]
+enum Subcommand {
+    Blur(Blur),
+    Resize(Resize),
+}
+
+#[derive(Parser)]
+struct Blur {
+    input: PathBuf,
+    sigma: f32,
+}
+
+#[derive(Parser)]
+struct Resize {
+    input: PathBuf,
+    w: u32,
+    h: u32,
 }
 
 
