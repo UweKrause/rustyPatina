@@ -10,8 +10,8 @@ fn main() -> anyhow::Result<()> {
 
     match args.subcommand {
         Subcommand::Blur(blur) => {
-            let img = ImageReader::open(&blur.input)
-                .with_context(|| format!("Failed to open input file: {:?}", blur.input))?
+            let img = ImageReader::open(&blur.input.path)
+                .with_context(|| format!("Failed to open input file: {:?}", blur.input.path))?
                 .decode()
                 .context("Failed to decode input image")?;
 
@@ -20,8 +20,8 @@ fn main() -> anyhow::Result<()> {
             blurred.save("out.jpg")?;
         }
         Subcommand::Resize(resize) => {
-            let img = ImageReader::open(resize.input)?.decode()?;
-            let resized = img.resize(resize.w, resize.h, FilterType::Gaussian);
+            let img = ImageReader::open(resize.input.path)?.decode()?;
+            let resized = img.resize(resize.width, resize.height, FilterType::Gaussian);
             resized.save("out.jpg")?;
         }
         Subcommand::Make => todo!(),
@@ -43,18 +43,28 @@ enum Subcommand {
     Make,
 }
 
+#[derive(Parser)]
+struct InputPath {
+    /// path to input
+    path: PathBuf,
+}
+
 /// Image sampling Performs a Gaussian blur on the supplied image.
 #[derive(Parser)]
 struct Blur {
-    /// path to input
-    input: PathBuf,
+    #[clap(flatten)]
+    input: InputPath,
     /// sigma is a measure of how much to blur by.
     sigma: f32,
 }
 
+/// Image sampling Resize the supplied image to the specified dimensions.
 #[derive(Parser)]
 struct Resize {
-    input: PathBuf,
-    w: u32,
-    h: u32,
+    #[clap(flatten)]
+    input: InputPath,
+    /// new width dimension.
+    width: u32,
+    /// new height dimension.
+    height: u32,
 }
