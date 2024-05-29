@@ -1,6 +1,7 @@
+use anyhow::Context;
 use std::path::PathBuf;
 
-use clap::{Parser};
+use clap::Parser;
 use image::imageops::FilterType;
 use image::io::Reader as ImageReader;
 
@@ -9,7 +10,10 @@ fn main() -> anyhow::Result<()> {
 
     match args.subcommand {
         Subcommand::Blur(blur) => {
-            let img = ImageReader::open(blur.input)?.decode()?;
+            let img = ImageReader::open(&blur.input)
+                .with_context(|| format!("Failed to open input file: {:?}", blur.input))?
+                .decode()?;
+
             let blurred = img.blur(blur.sigma);
             blurred.save("out.jpg")?;
         }
@@ -18,6 +22,7 @@ fn main() -> anyhow::Result<()> {
             let resized = img.resize(resize.w, resize.h, FilterType::Gaussian);
             resized.save("out.jpg")?;
         }
+        Subcommand::Make => todo!(),
     }
 
     Ok(())
@@ -33,11 +38,15 @@ struct Args {
 enum Subcommand {
     Blur(Blur),
     Resize(Resize),
+    Make,
 }
 
+/// Image sampling Performs a Gaussian blur on the supplied image.
 #[derive(Parser)]
 struct Blur {
+    /// path to input
     input: PathBuf,
+    /// sigma is a measure of how much to blur by.
     sigma: f32,
 }
 
@@ -47,6 +56,3 @@ struct Resize {
     w: u32,
     h: u32,
 }
-
-
-
