@@ -12,9 +12,11 @@ fn main() -> anyhow::Result<()> {
         Subcommand::Blur(blur) => {
             let img = ImageReader::open(&blur.input)
                 .with_context(|| format!("Failed to open input file: {:?}", blur.input))?
-                .decode()?;
+                .decode()
+                .context("Failed to decode input image")?;
 
             let blurred = img.blur(blur.sigma);
+
             blurred.save("out.jpg")?;
         }
         Subcommand::Resize(resize) => {
